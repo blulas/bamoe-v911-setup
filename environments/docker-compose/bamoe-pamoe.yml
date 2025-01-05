@@ -1,0 +1,219 @@
+services:
+
+  # This section installs the BAMOE Maven repository as a container image
+  maven:
+    image: quay.io/bamoe/maven-repository:9.1.1-ibm-0003
+    platform: linux/amd64
+    container_name: bamoe-911-maven-repository
+    ports:
+      - 9011:8080
+      
+  # This section installs the main BAMOE Canvas application
+  canvas:
+    container_name: bamoe-911-canvas-ui
+    image: "quay.io/bamoe/canvas:9.1.1-ibm-0003"
+    platform: linux/amd64
+    ports:
+      - 9090:8080
+    environment:
+      KIE_SANDBOX_REQUIRE_CUSTOM_COMMIT_MESSAGE: true
+      KIE_SANDBOX_EXTENDED_SERVICES_URL: "http://localhost:21345"
+      KIE_SANDBOX_CORS_PROXY_URL: "http://localhost:7081"
+      KIE_SANDBOX_ACCELERATORS: > 
+        [
+          {
+            "name": "Quarkus DMN",
+            "iconUrl": "https://github.com/kiegroup/kie-sandbox-quarkus-accelerator/raw/0.0.0/quarkus-logo.png",
+            "gitRepositoryUrl": "https://github.com/ibm/bamoe-canvas-quarkus-accelerator",
+            "gitRepositoryGitRef": "9.1.1-bamoe-0003-quarkus-dmn",
+            "dmnDestinationFolder": "src/main/resources/dmn",
+            "bpmnDestinationFolder": "src/main/resources/bpmn",
+             "otherFilesDestinationFolder": "src/main/resources/others"
+          },
+          {
+            "name": "Quarkus Full",
+            "iconUrl": "https://github.com/kiegroup/kie-sandbox-quarkus-accelerator/raw/0.0.0/quarkus-logo.png",
+            "gitRepositoryUrl": "https://github.com/ibm/bamoe-canvas-quarkus-accelerator",
+            "gitRepositoryGitRef": "9.1.1-ibm-0003-quarkus-full",
+            "dmnDestinationFolder": "src/main/resources/dmn",
+            "bpmnDestinationFolder": "src/main/resources/bpmn",
+            "otherFilesDestinationFolder": "src/main/resources/others"
+          }        ]
+      KIE_SANDBOX_AUTH_PROVIDERS: > 
+        [
+          {
+              "id": "github_dot_com",
+              "domain": "github.com",
+              "supportedGitRemoteDomains": [
+                  "github.com",
+                  "gist.github.com"
+              ],
+              "type": "github",
+              "name": "GitHub",
+              "enabled": true,
+              "iconPath": "",
+              "group": "git"
+          },
+          {
+              "id": "gitlab_dot_com",
+              "domain": "gitlab.com",
+              "supportedGitRemoteDomains": [
+                  "gitlab.com"
+              ],
+              "type": "gitlab",
+              "name": "GitLab",
+              "enabled": true,
+              "iconPath": "images/gitlab-logo.svg",
+              "group": "git"
+          },
+          {
+              "id": "bitbucket_dot_com",
+              "domain": "bitbucket.com",
+              "supportedGitRemoteDomains": [
+                  "bitbucket.com"
+              ],
+              "type": "bitbucket",
+              "name": "Bitbucket",
+              "enabled": true,
+              "iconPath": "images/bitbucket-logo.svg",
+              "group": "git"
+          },
+          {
+              "enabled": true,
+              "id": "openshift",
+              "type": "openshift",
+              "name": "OpenShift",
+              "iconPath": "images/openshift-logo.svg",
+              "group": "cloud"
+          },
+          {
+              "enabled": true,
+              "id": "kubernetes",
+              "type": "openshift",
+              "name": "Kubernetes",
+              "iconPath": "images/kubernetes-logo.svg",
+              "group": "cloud"
+          }
+        ]
+
+    depends_on:
+      - extended_services
+      - cors_proxy
+
+  # This section installs the BAMOE Extended Services container, which is used in support of the overall Canvas application
+  extended_services:
+    container_name: bamoe-911-canvas-extended-services
+    image: "quay.io/bamoe/extended-services:9.1.1-ibm-0003"
+    ports:
+      - 21345:21345
+
+  # This section installs the BAMOE Cors Proxy container, which is used in support of the overall Canvas application
+  cors_proxy:
+    container_name: bamoe-911-canvas-cors-proxy
+    image: "quay.io/bamoe/cors-proxy:9.1.1-ibm-0003"
+    ports:
+      - 7081:8080
+
+  # This section installs a PostgreSQL database for PAMOE state management
+  postgres:
+    container_name: bamoe-911-postgres
+    image: postgres:16.1-alpine3.19
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./sql:/docker-entrypoint-initdb.d:Z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      timeout: 45s
+      interval: 10s
+      retries: 50
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+  # This section installs the PostgreSQL administration application (pgadmin)
+  pgadmin:
+    container_name: bamoe-911-pgadmin
+    image: dpage/pgadmin4:8.14
+    ports:
+      - 8055:80
+    depends_on:
+      - postgres
+    volumes:
+      - ./pgadmin/servers.json:/pgadmin4/servers.json
+      - ./pgadmin/pgpass:/pgadmin4/pgpass
+    entrypoint: >
+      /bin/sh -c "
+      cp -f ./pgadmin4/pgpass /var/lib/pgadmin/;
+      chmod 600 /var/lib/pgadmin/pgpass;
+      /entrypoint.sh
+      "
+    environment:
+      PGADMIN_DEFAULT_EMAIL: user@bamoe.org
+      PGADMIN_DEFAULT_PASSWORD: pass
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      GUNICORN_ACCESS_LOGFILE: "/dev/null"
+
+  # This section installs keycloak, which is a requirement for the consoles
+  keycloak: 
+    container_name: bamoe-911-keycloak
+    image: quay.io/keycloak/keycloak:legacy
+    ports:
+      - "8480:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./keycloak/kogito-realm.json:/tmp/kogito-realm.json
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/auth/realms/kogito"]
+      interval: 2s
+      timeout: 1s
+      retries: 50
+    environment:
+      DB_VENDOR: POSTGRES
+      DB_ADDR: postgres
+      DB_DATABASE: keycloak
+      DB_USER: kogito-user
+      DB_SCHEMA: public
+      DB_PASSWORD: kogito-pass
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+      KEYCLOAK_IMPORT: /tmp/kogito-realm.json
+  
+  # This section installs the default process management console
+  management-console:
+    container_name: bamoe-911-management-console
+    image: quay.io/bamoe/management-console:9.1.1-ibm-0003
+    platform: linux/amd64
+    ports:
+      - 8280:8080
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      RUNTIME_TOOLS_MANAGEMENT_CONSOLE_KOGITO_ENV_MODE: "DEV"
+      RUNTIME_TOOLS_MANAGEMENT_CONSOLE_DATA_INDEX_ENDPOINT: http://127.0.0.1:8080/graphql
+
+  # This section installs the default task inbox 
+  task-console:
+    container_name: bamoe-911-task-console
+    image: quay.io/bamoe/task-console:9.1.1-ibm-0003
+    platform: linux/amd64
+    ports:
+      - 8380:8080
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      RUNTIME_TOOLS_TASK_CONSOLE_KOGITO_ENV_MODE: "PROD"
+      RUNTIME_TOOLS_TASK_CONSOLE_DATA_INDEX_ENDPOINT: http://172.17.0.1:-host.docker.internal}:8080/graphql
+      KOGITO_CONSOLES_KEYCLOAK_HEALTH_CHECK_URL: http://localhost:8480/auth/realms/kogito/.well-known/openid-configuration
+      KOGITO_CONSOLES_KEYCLOAK_URL: http://localhost:8480/auth
+      KOGITO_CONSOLES_KEYCLOAK_REALM: kogito
+      KOGITO_CONSOLES_KEYCLOAK_CLIENT_ID: kogito-console-quarkus

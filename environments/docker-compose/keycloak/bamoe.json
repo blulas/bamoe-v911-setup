@@ -1,5 +1,5 @@
 {
-  "realm": "kogito",
+  "realm": "bamoe",
   "notBefore": 0,
   "revokeRefreshToken": false,
   "refreshTokenMaxReuse": 0,
@@ -280,7 +280,7 @@
       ],
       "security-admin-console": [],
       "admin-cli": [],
-      "kogito-service": [
+      "bamoe-service": [
         {
           "name": "uma_protection",
           "composite": false,
@@ -352,13 +352,13 @@
     {
       "clientId": "account",
       "name": "${client_account}",
-      "baseUrl": "/auth/realms/kogito/account",
+      "baseUrl": "/auth/realms/bamoe/account/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "clientAuthenticatorType": "client-secret",
       "secret": "0136c3ef-0dfd-4b13-a6d0-2c8b6358edec",
       "defaultRoles": ["view-profile", "manage-account"],
-      "redirectUris": ["/auth/realms/kogito/account/*"],
+      "redirectUris": ["/auth/realms/bamoe/account/*"],
       "webOrigins": [],
       "notBefore": 0,
       "bearerOnly": false,
@@ -430,15 +430,15 @@
       "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"]
     },
     {
-      "clientId": "kogito-frontend",
-      "rootUrl": "http://localhost:8082",
-      "adminUrl": "http://localhost:8082",
+      "clientId": "bamoe-management-console",
+      "rootUrl": "http://localhost:8380",
+      "adminUrl": "http://localhost:8380",
       "surrogateAuthRequired": false,
       "enabled": true,
       "clientAuthenticatorType": "client-secret",
       "secret": "secret",
-      "redirectUris": ["http://localhost:8082/*"],
-      "webOrigins": ["http://localhost:8082"],
+      "redirectUris": ["http://localhost:8380/*"],
+      "webOrigins": ["http://localhost:8380"],
       "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": false,
@@ -446,7 +446,7 @@
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": false,
-      "publicClient": false,
+      "publicClient": true,
       "frontchannelLogout": false,
       "protocol": "openid-connect",
       "attributes": {
@@ -476,7 +476,7 @@
       }
     },
     {
-      "clientId": "kogito-app",
+      "clientId": "bamoe-app",
       "rootUrl": "http://localhost:8080",
       "adminUrl": "http://localhost:8080",
       "surrogateAuthRequired": false,
@@ -522,7 +522,7 @@
       }
     },
     {
-      "clientId": "kogito-service",
+      "clientId": "bamoe-service",
       "rootUrl": "",
       "surrogateAuthRequired": false,
       "enabled": true,
@@ -654,7 +654,7 @@
       }
     },
     {
-      "clientId": "kogito-console-react",
+      "clientId": "bamoe-console-react",
       "rootUrl": "http://localhost:9000",
       "adminUrl": "http://localhost:9000/",
       "baseUrl": "http://localhost:9000/",
@@ -696,7 +696,7 @@
       "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"]
     },
     {
-      "clientId": "kogito-console-quarkus",
+      "clientId": "bamoe-console-quarkus",
       "rootUrl": "http://localhost:8380",
       "adminUrl": "http://localhost:8380/",
       "baseUrl": "http://localhost:8380/",
@@ -754,7 +754,7 @@
       "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"]
     },
     {
-      "clientId": "kogito-jobs-service",
+      "clientId": "bamoe-jobs-service",
       "rootUrl": "http://localhost:8080",
       "adminUrl": "http://localhost:8080",
       "surrogateAuthRequired": false,
@@ -828,12 +828,12 @@
     {
       "clientId": "security-admin-console",
       "name": "${client_security-admin-console}",
-      "baseUrl": "/auth/admin/kogito/console/index.html",
+      "baseUrl": "/auth/admin/bamoe/console/index.html",
       "surrogateAuthRequired": false,
       "enabled": true,
       "clientAuthenticatorType": "client-secret",
       "secret": "e571b211-2550-475d-b87f-116ff54091ee",
-      "redirectUris": ["/auth/admin/kogito/console/*"],
+      "redirectUris": ["/auth/admin/bamoe/console/*"],
       "webOrigins": [],
       "notBefore": 0,
       "bearerOnly": false,
@@ -1987,15 +1987,7 @@
       "credentials": [
         {
           "type": "password",
-          "hashedSaltedValue": "JV3DUNLjqOadjbBOtC4rvacQI553CGaDGAzBS8MR5ReCr7SwF3E6CsW3T7/XO8ITZAsch8+A/6loeuCoVLLJrg==",
-          "salt": "uCbOH7HZtyDtMd0E9DG/nw==",
-          "hashIterations": 27500,
-          "counter": 0,
-          "algorithm": "pbkdf2-sha256",
-          "digits": 0,
-          "period": 0,
-          "createdDate": 1554245879227,
-          "config": {}
+          "value": "jdoe"
         }
       ],
       "disableableCredentialTypes": ["password"],

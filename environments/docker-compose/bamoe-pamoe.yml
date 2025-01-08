@@ -1,12 +1,12 @@
 services:
 
-  # This section installs the BAMOE Maven repository as a container image
+  ## This section installs the BAMOE Maven repository as a container image
   maven:
     image: quay.io/bamoe/maven-repository:9.1.1-ibm-0003
     platform: linux/amd64
     container_name: bamoe-911-maven-repository
     ports:
-      - 9011:8080
+      - 9012:8080
       
   # This section installs the main BAMOE Canvas application
   canvas:
@@ -118,6 +118,7 @@ services:
   postgres:
     container_name: bamoe-911-postgres
     image: postgres:16.1-alpine3.19
+    profiles: ["jvm", "full"]
     ports:
       - "5432:5432"
     volumes:
@@ -130,11 +131,13 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bamoe
 
   # This section installs the PostgreSQL administration application (pgadmin)
   pgadmin:
     container_name: bamoe-911-pgadmin
     image: dpage/pgadmin4:8.14
+    profiles: ["jvm", "full"]
     ports:
       - 8055:80
     depends_on:
@@ -155,65 +158,39 @@ services:
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
       GUNICORN_ACCESS_LOGFILE: "/dev/null"
 
-  # This section installs keycloak, which is a requirement for the consoles
-  keycloak: 
+  # This section installs the identiy service (keycloak)
+  keycloak:
     container_name: bamoe-911-keycloak
-    image: quay.io/keycloak/keycloak:legacy
-    ports:
-      - "8480:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - ./keycloak/kogito-realm.json:/tmp/kogito-realm.json
+    image: quay.io/keycloak/keycloak:26.0.5
+    profiles: ["dev", "jvm", "full"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/auth/realms/kogito"]
-      interval: 2s
-      timeout: 1s
-      retries: 50
+      test:
+        [
+          "CMD-SHELL",
+          "exec 3<>/dev/tcp/127.0.0.1/9000; echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost:9000\r\nConnection: close\r\n\r\n' >&3;cat <&3 | grep -q '\"status\": \"UP\"' && exit 0 || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - 8180:8080
     environment:
-      DB_VENDOR: POSTGRES
-      DB_ADDR: postgres
-      DB_DATABASE: keycloak
-      DB_USER: kogito-user
-      DB_SCHEMA: public
-      DB_PASSWORD: kogito-pass
-      KEYCLOAK_USER: admin
-      KEYCLOAK_PASSWORD: admin
-      KEYCLOAK_IMPORT: /tmp/kogito-realm.json
-  
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: true
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import
+    command: start-dev --import-realm
+
   # This section installs the default process management console
   management-console:
-    container_name: bamoe-911-management-console
-    image: quay.io/bamoe/management-console:9.1.1-ibm-0003
-    platform: linux/amd64
-    ports:
-      - 8280:8080
-    depends_on:
-      keycloak:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-    environment:
-      RUNTIME_TOOLS_MANAGEMENT_CONSOLE_KOGITO_ENV_MODE: "DEV"
-      RUNTIME_TOOLS_MANAGEMENT_CONSOLE_DATA_INDEX_ENDPOINT: http://127.0.0.1:8080/graphql
-
-  # This section installs the default task inbox 
-  task-console:
-    container_name: bamoe-911-task-console
-    image: quay.io/bamoe/task-console:9.1.1-ibm-0003
-    platform: linux/amd64
-    ports:
-      - 8380:8080
-    depends_on:
-      keycloak:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-    environment:
-      RUNTIME_TOOLS_TASK_CONSOLE_KOGITO_ENV_MODE: "PROD"
-      RUNTIME_TOOLS_TASK_CONSOLE_DATA_INDEX_ENDPOINT: http://172.17.0.1:-host.docker.internal}:8080/graphql
-      KOGITO_CONSOLES_KEYCLOAK_HEALTH_CHECK_URL: http://localhost:8480/auth/realms/kogito/.well-known/openid-configuration
-      KOGITO_CONSOLES_KEYCLOAK_URL: http://localhost:8480/auth
-      KOGITO_CONSOLES_KEYCLOAK_REALM: kogito
-      KOGITO_CONSOLES_KEYCLOAK_CLIENT_ID: kogito-console-quarkus
+      container_name: bamoe-911-management-console
+      image: quay.io/bamoe/management-console:9.1.1-ibm-0003
+      profiles: ["full"]
+      ports:
+        - 8380:8080
+      volumes:
+        - ./svg/:/home/kogito/data/svg/
+      environment:
+        RUNTIME_TOOLS_MANAGEMENT_CONSOLE_KOGITO_ENV_MODE: "DEV"
+        RUNTIME_TOOLS_MANAGEMENT_CONSOLE_DATA_INDEX_ENDPOINT: http://127.0.0.1:8080/graphql

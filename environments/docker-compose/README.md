@@ -18,7 +18,7 @@ As the container images for BAMOE v9.1.1 are currently published to Quay.io.  Th
 
     ```bash
     docker compose -f bamoe-dmoe.yml up
-    docker compose -f bamoe-pamoe.yml up
+    docker compose -f bamoe-pamoe.yml --profile full up
     ```
 
 2.  The images will start containers on the following ports:
@@ -38,15 +38,4 @@ As the container images for BAMOE v9.1.1 are currently published to Quay.io.  Th
     | BAMOE Canvas              | [9090](http://localhost:9090) |
     | PostgreSQL                | [5432](http://localhost:5432) |
     | PgAdmin                   | [8055](http://localhost:8055) |
-
-> [NOTE]  
-> During container creation time, you may encounter an error message indicating that the container was unable to read/write to local volumns.  This is usuall just a case of setting the correct file permissions, such as `pgadmin` or `sql` folders.  In order to fix this, perform the following commands in this project's `docker-compose` folder:
-```bash
-chmod 755 sql
-chmod 755 keycloak
-chmod 755 pgadmin
-chmod 755 pgadmin/pgpass
-```
-
-
 

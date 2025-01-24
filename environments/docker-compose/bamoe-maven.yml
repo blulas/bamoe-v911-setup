@@ -1,9 +1,0 @@
-services:
-
-  # This section installs the BAMOE Maven repository as a container image
-  maven:
-    image: quay.io/bamoe/maven-repository:9.1.1-ibm-0003
-    platform: linux/amd64
-    container_name: bamoe-911-maven-repository
-    ports:
-      - 9011:8080

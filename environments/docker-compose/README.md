@@ -7,23 +7,18 @@ For more information on how to properly setup Maven for local development, visit
 ## Container Images
 As some of the container images for BAMOE v9.1.1 can be pulled directly from Quay.io.  Here are the steps to follow:
 
-1.  In the `docker-compose` folder, run the following `docker-compose` files in order to load the individual images as containers:
+1.  In the `docker-compose` folder, use the `docker-compose.yml` file in order to load the individual services as containers:
 
     ```bash
-    docker compose -f bamoe-maven.yml up
-    docker compose -f bamoe-canvas.yml up
+    docker compose --profile=<profile> up [optional]<service-name>
     ```
 
-    OR (_for the full install, use either the DMOE or PAMOE file:_)
-
-    ```bash
-    docker compose -f bamoe-dmoe.yml up
-    docker compose -f bamoe-pamoe.yml --profile full up
-    ```
+    where `<profile>` equals "dev", "infra", or "full"
+    where `<service-name>` equals the name of the service in compose file (optional, leaving this off will install all services in the `docker-compose.yml` file.)
 
 2.  The images will start containers on the following ports:
 
-    | Service                   | Port @ localhost              |
+     | Service                   | Port @ localhost              |
     | ------------------------- | ----------------------------- |
     | BAMOE Maven               | [9011](http://localhost:9011) |
     | BAMOE Canvas              | [9090](http://localhost:9090) |
